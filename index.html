@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Create Call</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#0b0e13;color:#e8eef6;margin:0;padding:24px}
+    .card{max-width:680px;margin:0 auto;background:#121722;border:1px solid #1f2734;border-radius:12px;padding:20px}
+    label{display:block;margin-top:12px;margin-bottom:4px;color:#a9b3c4}
+    input{width:100%;padding:10px;border-radius:8px;border:1px solid #243144;background:#0e141c;color:#e8eef6}
+    button{margin-top:18px;padding:12px 16px;border:0;border-radius:10px;background:#6aa1ff;color:#09111b;font-weight:600;cursor:pointer}
+    .links{margin-top:20px;word-break:break-all}
+    .hint{color:#93a3bb;font-size:13px;margin-top:6px}
+    .ok{color:#79ffa8}.err{color:#ff7b7b}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Δημιουργία κλήσης</h1>
+    <div class="hint">Τα rooms γίνονται <b>Public</b> αυτόματα. Θα πάρεις 3 links (model / client / manager).</div>
+
+    <label>Όνομα Πελάτη</label>
+    <input id="clientName" placeholder="Nick" />
+
+    <label>Όνομα Μοντέλου</label>
+    <input id="modelName" placeholder="Anna" />
+
+    <label>Διάρκεια (λεπτά)</label>
+    <input id="duration" type="number" min="1" value="30" />
+
+    <button id="go">Create Call</button>
+
+    <div id="status" class="hint"></div>
+    <div id="links" class="links"></div>
+  </div>
+
+  <script>
+    const btn = document.getElementById('go');
+    const status = document.getElementById('status');
+    const links = document.getElementById('links');
+
+    btn.onclick = async () => {
+      const clientName = document.getElementById('clientName').value || 'Client';
+      const modelName  = document.getElementById('modelName').value  || 'Model';
+      const duration   = parseInt(document.getElementById('duration').value || '30', 10);
+
+      btn.disabled = true; status.textContent = 'Δημιουργία...'; links.innerHTML = '';
+
+      try {
+        const res = await fetch('/api/create-call', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ clientName, modelName, durationMinutes: duration })
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+
+        status.innerHTML = '<span class="ok">OK</span> | Room: <b>'+(data.roomName||'-')+'</b>';
+        links.innerHTML = `
+          <div><b>Model:</b> <a href="${data.model}" target="_blank">${data.model}</a></div>
+          <div><b>Client:</b> <a href="${data.client}" target="_blank">${data.client}</a></div>
+          <div><b>Manager:</b> <a href="${data.managerStealth}" target="_blank">${data.managerStealth}</a></div>
+        `;
+      } catch (e) {
+        status.innerHTML = '<span class="err">Σφάλμα:</span> '+e.message;
+      } finally {
+        btn.disabled = false;
+      }
+    };
+  </script>
+</body>
+</html>
